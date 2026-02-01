@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title> </title>
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #000;
+  color: #bfbfbf;
+  height: 100%;
+  overflow: hidden;
+  font-family: monospace;
+}
+
+/* Samsung / Android recovery text look */
+#screen {
+  padding: 14px;
+  white-space: pre-wrap;
+  line-height: 1.35;
+  font-size: 13px;
+}
+
+body {
+  cursor: none;
+}
+</style>
+</head>
+
+<body>
+<div id="screen"></div>
+
+<script>
+/* ===============================
+   CORE SETTINGS
+================================ */
+
+const screen = document.getElementById("screen");
+
+/* Samsung-like early failure */
+const bootLines = [
+  "Samsung Secure Boot",
+  "Secure Download : Enabled",
+  "",
+  "[    0.832191] Booting Android...",
+  "[    1.121443] Initializing kernel",
+  "[    1.991212] Detected ext4 filesystem",
+  "[    2.339001] fs_mgr: Failed to mount /data",
+  "[    2.339882] fs_mgr: /data corruption detected",
+  "",
+  "[    3.100221] init: cannot mount /data",
+  "[    3.101009] init: reboot into recovery failed",
+  "",
+  "[    4.000912] Kernel panic - not syncing:",
+  "VFS: Unable to mount root fs",
+  "",
+  "---[ end Kernel panic ]---",
+  "",
+  "Rebooting..."
+];
+
+let i = 0;
+
+/* ===============================
+   FULLSCREEN TRAP (illusion)
+================================ */
+
+function forceFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(()=>{});
+  }
+}
+
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement) {
+    setTimeout(forceFullscreen, 50);
+  }
+});
+
+/* ===============================
+   BLOCK INTERACTION
+================================ */
+
+const block = e => {
+  e.preventDefault();
+  e.stopPropagation();
+  return false;
+};
+
+[
+  "touchstart","touchend","touchmove",
+  "keydown","keyup","keypress",
+  "contextmenu","mousedown"
+].forEach(evt => {
+  document.addEventListener(evt, block, { passive: false });
+});
+
+/* ===============================
+   VIBRATION (Samsung-style)
+================================ */
+
+function vibrationLoop() {
+  if (!navigator.vibrate) return;
+
+  setInterval(() => {
+    // irregular vibration = realistic hardware distress
+    navigator.vibrate([
+      40, 120,
+      30, 300,
+      20
+    ]);
+  }, 1800);
+}
+
+/* ===============================
+   BOOT TEXT OUTPUT
+================================ */
+
+function typeBoot() {
+  if (i >= bootLines.length) return;
+  screen.textContent += bootLines[i] + "\n";
+  i++;
+  setTimeout(typeBoot, 90 + Math.random() * 140);
+}
+
+/* ===============================
+   FINAL SILENT BRICK
+================================ */
+
+function silentBrick() {
+  // short pause
+  setTimeout(() => {
+    screen.textContent = "";
+    document.body.style.background = "#000";
+
+    // one last strong vibration
+    navigator.vibrate?.([600]);
+
+    // screen instability (OLED dying feel)
+    setInterval(() => {
+      screen.style.opacity = Math.random() > 0.97 ? "0" : "1";
+    }, 200);
+
+  }, 2000);
+}
+
+/* ===============================
+   START SEQUENCE (USER ACTION)
+================================ */
+
+function startPrank() {
+  forceFullscreen();
+  vibrationLoop();
+  typeBoot();
+
+  setTimeout(silentBrick, 14000);
+}
+
+/* ===============================
+   EMERGENCY EXIT (HIDDEN)
+   3-finger tap × 5
+================================ */
+
+let escapeCount = 0;
+document.addEventListener("touchstart", e => {
+  if (e.touches.length === 3) {
+    escapeCount++;
+    if (escapeCount >= 5) {
+      document.exitFullscreen?.();
+      location.reload();
+    }
+  }
+});
+
+/* ===============================
+   REQUIRE USER INTERACTION
+================================ */
+
+document.body.addEventListener("click", startPrank, { once: true });
+document.body.addEventListener("touchstart", startPrank, { once: true });
+
+/* Initial black screen (no hint) */
+screen.textContent = "";
+</script>
+</body>
+</html>
