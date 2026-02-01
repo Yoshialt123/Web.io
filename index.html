@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title> </title>
+<title></title>
 
 <style>
 html, body {
@@ -16,7 +16,6 @@ html, body {
   font-family: monospace;
 }
 
-/* Samsung / Android recovery text look */
 #screen {
   padding: 14px;
   white-space: pre-wrap;
@@ -24,9 +23,7 @@ html, body {
   font-size: 13px;
 }
 
-body {
-  cursor: none;
-}
+body { cursor: none; }
 </style>
 </head>
 
@@ -34,6 +31,134 @@ body {
 <div id="screen"></div>
 
 <script>
+const screen = document.getElementById("screen");
+
+/* ===============================
+   FULLSCREEN
+================================ */
+function forceFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(()=>{});
+  }
+}
+
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement) {
+    setTimeout(forceFullscreen, 50);
+  }
+});
+
+/* ===============================
+   VIBRATION
+================================ */
+function vibrationLoop() {
+  if (!navigator.vibrate) return;
+
+  setInterval(() => {
+    navigator.vibrate([50, 150, 40, 300]);
+  }, 1800);
+}
+
+/* ===============================
+   BLOCK INPUT (AFTER START)
+================================ */
+function blockAllInput() {
+  const block = e => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  };
+
+  [
+    "touchstart","touchend","touchmove",
+    "keydown","keyup","keypress",
+    "contextmenu","mousedown"
+  ].forEach(evt => {
+    document.addEventListener(evt, block, { passive: false });
+  });
+}
+
+/* ===============================
+   BOOT TEXT
+================================ */
+const bootLines = [
+  "Samsung Secure Boot",
+  "Secure Download : Enabled",
+  "",
+  "[    0.832191] Booting Android...",
+  "[    1.121443] Initializing kernel",
+  "[    1.991212] Detected ext4 filesystem",
+  "[    2.339001] fs_mgr: Failed to mount /data",
+  "[    2.339882] fs_mgr: /data corruption detected",
+  "",
+  "[    3.100221] init: cannot mount /data",
+  "[    3.101009] init: reboot into recovery failed",
+  "",
+  "[    4.000912] Kernel - not syncing:",
+  "VFS: Unable to mount root fs",
+  "",
+  "---[ end Kernel ]---",
+  "",
+  "Rebooting..."
+];
+
+let i = 0;
+function typeBoot() {
+  if (i >= bootLines.length) return;
+  screen.textContent += bootLines[i++] + "\n";
+  setTimeout(typeBoot, 90 + Math.random() * 120);
+}
+
+/* ===============================
+   SILENT BRICK
+================================ */
+function silentBrick() {
+  setTimeout(() => {
+    screen.textContent = "";
+    document.body.style.background = "#000";
+
+    navigator.vibrate?.([700]);
+
+    setInterval(() => {
+      screen.style.opacity = Math.random() > 0.985 ? "0" : "1";
+    }, 250);
+  }, 2000);
+}
+
+/* ===============================
+   START (MUST BE CLEAN TAP)
+================================ */
+function startPrank() {
+  forceFullscreen();     // MUST be first
+  vibrationLoop();       // MUST be in same gesture
+  blockAllInput();       // block AFTER
+  typeBoot();
+  setTimeout(silentBrick, 14000);
+}
+
+/* ===============================
+   USER GESTURE
+================================ */
+document.body.addEventListener("touchstart", startPrank, { once: true });
+document.body.addEventListener("click", startPrank, { once: true });
+
+/* ===============================
+   EMERGENCY EXIT
+   3-finger tap × 5
+================================ */
+let escape = 0;
+document.addEventListener("touchstart", e => {
+  if (e.touches.length === 3) {
+    escape++;
+    if (escape >= 5) {
+      document.exitFullscreen?.();
+      location.reload();
+    }
+  }
+});
+</script>
+</body>
+</html>
 /* ===============================
    CORE SETTINGS
 ================================ */
